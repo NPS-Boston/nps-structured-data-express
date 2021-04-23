@@ -1,0 +1,140 @@
+<html>
+<head>
+<script src='https://www.nps.gov/ADF/thirdParty/jquery/jquery-1.12.js'></script>
+<title>NPS Structured Data Express Library</title>
+<link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+
+<style>
+body {
+	margin:1em auto 1em auto;
+	max-width:1024px;
+
+}
+textarea {
+	display:block;
+	width:90%;
+}
+.example {
+	padding:1em;
+	width:80%;
+	background-color:beige;
+	border:1px solid black;
+	margin-left:2em;
+}
+h5 {
+	margin-left:2em;
+	padding-left:1em;
+	border-left:2px solid grey;
+}
+p{
+	margin-left:2em;
+	}
+
+h4{
+
+border-top:1px solid black;
+border-bottom:1px solid black;
+}
+h5{
+font-size:1em;
+}
+</style>
+</head>
+<body>
+<h1>NPS Structured Data 'Express'</h1>
+<h2>Library for load-time structured data usage.</h2>
+<hr>
+<h3>Getting Started:</h3>
+<p>First, place script reference at end of page. Include park argument of correct alpha code(s) desired. Comma-separate multiple alpha-codes in the argument. It would also be a good idea to include the attribute <i>defer</i> so you don't delay the page loading/rendering. Besides, you want the page to be rendered before grabbing and placing structured data.
+<textarea readonly><script defer src="/features/bost/structured_data/nps_data_express.js?park=bost,boaf"></script></textarea></p>
+
+<p>Once the library reference is set, simply place any and all html tags, with appropriate 'data' attributes, wherever it is desired to have structured data rendered into the page body. Due to the way the structured data is configured/built/represented, the methods for calling specific data depends on what you are doing. For operating hours, attributes need the operatingHoursID identifier. Other data, such as fees or alerts, rely on the exact string of the data set's title. Whatever text/html is enclosed within within the html tag with a valid 'data' attribute is overwritten with requested structured data when the page is loaded.</p>
+<p>For example, the following snippet:
+
+<textarea readonly>Charlestown Navy Yard Visitor Center: <div data-hours-season="9698">Loading...</div></textarea>
+
+Returns the entire season of the Charlestown Navy Yard Visitor Center:</p>
+<div class="example">
+Charlestown Navy Yard Visitor Center: <div data-hours-season="9698">Loading Hours...</div>
+</div>
+
+<p>And the following snippet requests for all fees for the Paul Revere House:
+<textarea readonly>Paul Revere House: <div data-fees="Paul Revere House">Loading Fees...</div></textarea></p>
+<div class="example">
+Paul Revere House: <div data-fees="Paul Revere House">Loading...</div>
+</div>
+
+<hr>
+<h3>Data Attributes to get Structured Data:</h3>
+<h4>Operating Hours</h4>
+<h5>First, get the correct operatingScheduleID</h5>
+<p>Operating hours are grouped by a unique ID in the structured data - operatingScheduleID. To call the correct data, you need the correct ID. Use this widget to get the IDs for each operating schedule in the structured data. Enter the 4 character alpha-code for the park/site/etc. i.e. 'bost'<br><input id="alpha" type="text"><button onclick="getDataIDs()">Get IDs</button></p>
+
+<div id="id_results" class="example"></div>
+<script>
+function getDataIDs(){
+	jQuery.ajax({
+		url:'/' + $("#alpha").val() + '/structured_data_' + $("#alpha").val() + '.json',
+		success:function(d)
+			{
+				console.log(d)
+				var res = "<h3>" + d.name + ":</h3>"
+				res += "<h4>" + d.operatingHours.length + " Operating Hours Schedules</h4><p>"
+				for(var x=0; x<d.operatingHours.length; x++)
+				{
+					res += d.operatingHours[x].name + ": <b>" + d.operatingHours[x].operatingScheduleID + "</b><br>"
+				}
+				res += "</p>"
+				$("#id_results").html(res)
+			}
+	})
+}
+</script>
+<h5>data-hours-season="<i>operatingScheduleID</i>"</h5>
+<p>This attribute will calculate the entire season, first posting "normal hours" and then each exception. Exceptions spanning more than one day (i.e. extended summer, winter hours) come next in chronological order, followed by single day exceptions (i.e. holidays) in chronological order.</p>
+
+<h5>data-hours-now="<i>operatingScheduleID</i>"</h5>
+<p>Based off the date right now, library calculates what the hours are for that day.</p>
+<p>Example:
+<textarea readonly>Dorchester Heights: <b data-hours-now="9699">Loading Hours...</b></textarea></p>
+
+<div class="example">
+Dorchester Heights: <b data-hours-now="9699">Loading Hours...</b>
+</div>
+<h5>data-hours-current="<i>operatingScheduleID</i>"</h5>
+<p>Print the current season site is operating under</p>
+<p>Example:
+<textarea readonly>Charlestown Navy Yard Visitor Center: <div data-hours-current="9698">Loading Hours...</div></textarea></p>
+
+<div class="example">
+Charlestown Navy Yard Visitor Center: <div data-hours-current="9698">Loading Hours...</div>
+</div>
+<h5>data-hours-description="<i>operatingScheduleID</i>"</h5>
+<p>Print the "description" field from structured data</p>
+<p>Example:
+<textarea readonly>Note about Bunker Hill: <div data-hours-description="9697">Loading Hours...</div></textarea></p>
+
+<div class="example">
+Note about Bunker Hill:  <div data-hours-description="9697">Loading Hours...</div>
+</div>
+
+<h4>Alerts</h4>
+<p>If a site closes outside a normal schedule, alerts are the preferred method. But to make sure visitors see low level alerts when coming to nps.gov from the outside (search engine result), a data-alerts attribute can display somewhere prominently in a page, or even overwrite a data-hours-now call.</p>
+<h5>data-alerts="<i>alert_title</i>"</h5>
+<p><textarea readonly>Today's Hours in the Great Hall: <b data-hours-now="18081" data-alerts="Great Hall Closure">Loading...</b></textarea>
+If there are no alerts with the title "Great Hall Closure" (verbatim) the normal routine of getting the hours today/now will populate the div tag. However, if there is an alert with the title "Great Hall Closure" the body of that alert will overwrite the normal hours.</p>
+<div class="example">
+Today's Hours in the Great Hall: <b data-hours-now="18081" data-alerts="Great Hall Closure">Loading...</b>
+</div>
+
+<h4>Fees</h4>
+<h5>data-fees="<i>title</i>"</h5>
+<p>NPS Structured data uses one record per fee amount/type/description. There is no support for a fee structure. In order to get a fee structure related to a specific site (i.e. Paul Revere House has an adult, senior/student, and youth admission rate), the title of each related fee record should be the same. Description of each fee record should be the type of fee (Adult, Senior (62+), etc.). The cost is self explanatory.
+<textarea readonly>Admission for the Paul Revere House:<div data-fees="Paul Revere House"></div></textarea></p>
+<div class="example">Admission for the Paul Revere House:<div data-fees="Paul Revere House"></div></div>
+<hr>
+
+<script defer src="https://www.nps.gov/features/bost/structured_data/nps_data_express.js?park=bost,boaf"></script>
+
+</body>
+</html>
